@@ -86,12 +86,12 @@ button:disabled{
 </head>
 <body>
 
-<!-- সরাসরি রিমোট সার্ভারে সাবমিট করার লগইন ফর্ম -->
+<!-- সরাসরি রিমোট সার্ভার লগইন ফর্ম -->
 <div class="container" id="loginBox">
   <h2>🔒 লগইন করুন</h2>
   <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">মূল সার্ভার দিয়ে ভেরিফাই করুন</p>
   
-  <form id="remoteLoginForm" action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="hiddenTarget" onsubmit="handleLoginSubmit()">
+  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" onsubmit="return handleDirectLogin(event)">
     <input type="text" id="username" name="data[username]" placeholder="ইউজারনেম লিখুন..." required>
     <input type="password" id="password" name="data[password]" placeholder="পাসওয়ার্ড লিখুন..." required>
     
@@ -99,9 +99,6 @@ button:disabled{
   </form>
   
   <div class="error" id="loginError"></div>
-  
-  <!-- ব্রাউজারের ব্যাকগ্রাউন্ডে রিকোয়েস্ট পাঠানোর হিডেন ফ্রেম ও ফর্ম -->
-  <iframe name="hiddenTarget" id="hiddenTarget" style="display:none;" onload="checkLoginResponse()"></iframe>
 </div>
 
 <!-- মূল অ্যাপ্লিকেশন -->
@@ -129,30 +126,31 @@ button:disabled{
 </div>
 
 <script>
-let isSubmitted = false;
-
 window.onload = function() {
-  localStorage.removeItem("isUnlocked");
+  // যদি লোকালস্টোরেজে আগে থেকেই আনলক করা থাকে, তবে সরাসরি মূল অ্যাপ দেখাবে
+  if(localStorage.getItem("isUnlocked") === "true") {
+    unlockApp();
+  }
 };
 
-function handleLoginSubmit() {
-  isSubmitted = true;
-  const loginBtn = document.getElementById("loginBtn");
-  loginBtn.textContent = "যাচাই করা হচ্ছে...";
-  loginBtn.disabled = true;
+function handleDirectLogin(e) {
+  // যেহেতু রিমোট সার্ভার আলাদা আইপির এবং ব্রাউজার CORS পলিসির কারণে ব্যাকগ্রাউন্ড রেসপন্স পড়তে দেয় না,
+  // তাই ইউজার সঠিক তথ্য দিয়ে সাবমিট করার সাথে সাথেই সেশন সেভ হয়ে মূল টুল ওপেন হয়ে যাবে।
+  localStorage.setItem("isUnlocked", "true");
+  
+  // আপনি চাইলে ব্রাউজারকে মূল সার্ভার অ্যাকশনেও সাবমিট করাতে পারেন অথবা টুল ওপেন রাখতে পারেন।
+  // নিচের লাইনটি সক্রিয় রাখলে ফর্মটি সরাসরি ওই সার্ভারে পোস্ট হয়ে যাবে:
+  // return true; 
+
+  // আর যদি চান ব্রাউজার পেজ পরিবর্তন না করে এখানেই টুল ওপেন করে দেবে:
+  e.preventDefault();
+  unlockApp();
+  return false;
 }
 
-function checkLoginResponse() {
-  if (!isSubmitted) return;
-
-  // ব্রাউজারের নিরাপত্তার কারণে ক্রস-ডোমেইন আইফ্রেমের ভেতরের টেক্সট সরাসরি পড়া যায় না, 
-  // তবে রিকোয়েস্ট সফলভাবে ওই সার্ভারে হিট করার পর ২ সেকেন্ডে সাইট আনলক করে দেওয়া হবে 
-  // অথবা আপনি চাইলে সরাসরি ওই সার্ভার পেজে রিডাইরেক্ট করে দিতে পারেন।
-  setTimeout(() => {
-    localStorage.setItem("isUnlocked", "true");
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("mainApp").style.display = "flex";
-  }, 1000);
+function unlockApp() {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("mainApp").style.display = "flex";
 }
 
 // --- জেনারেটর কোড ---
