@@ -74,40 +74,30 @@ button:disabled{
   font-weight:700;
   border-radius:10px;
   cursor:pointer;
-  z-index: 1000;
 }
+/* লক স্ক্রিনের জন্য স্টাইল */
 #loginBox {
   text-align: center;
   max-width: 380px;
 }
 #mainApp {
-  width: 100%; 
-  display: none; 
-  justify-content: center;
+  display: none; /* শুরুতে মূল অ্যাপ হাইড থাকবে */
 }
 </style>
 </head>
 <body>
 
-<!-- লগইন স্ক্রিন -->
+<!-- পাসওয়ার্ড লক স্ক্রিন -->
 <div class="container" id="loginBox">
-  <h2>🔒 লগইন করুন</h2>
-  <p style="font-size:14px; margin-bottom:15px; opacity:0.8;">মূল সার্ভারে লগইন করতে তথ্য দিন</p>
-  
-  <!-- এখানে form সাবমিট করার সাথে সাথে সার্ভার নতুন ট্যাবে খুলবে এবং এই ট্যাবটি মূল টুলে চলে যাবে -->
-  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="_blank" onsubmit="handleLoginSubmit()">
-    <input type="text" name="data[username]" placeholder="ইউজারনেম লিখুন..." required>
-    <input type="password" name="data[password]" placeholder="পাসওয়ার্ড লিখুন..." required>
-    
-    <button type="submit" style="margin-top: 10px;">লগইন করুন ও টুলটি চালু করুন</button>
-  </form>
-
-  <!-- ব্যাকআপ বাটন -->
-  <button type="button" onclick="unlockApp()" style="margin-top: 15px; background: #ffcc00; color: #000;">লগইন করা থাকলে সরাসরি এখানে ক্লিক করুন</button>
+  <h2>🔒 অ্যাক্সেস লক করা আছে</h2>
+  <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">কাজ শুরু করতে সঠিক পাসওয়ার্ড দিন</p>
+  <input type="password" id="passInput" placeholder="পাসওয়ার্ড লিখুন..." onkeypress="handleEnter(event)">
+  <button onclick="checkPassword()">Unlock করুন</button>
+  <div class="error" id="loginError"></div>
 </div>
 
-<!-- মূল অ্যাপ্লিকেশন -->
-<div id="mainApp">
+<!-- মূল অ্যাপ্লিকেশন (পাসওয়ার্ড দিলে এটি দেখা যাবে) -->
+<div id="mainApp" style="width: 100%; display: none; justify-content: center;">
   <button class="left-button" id="mrBtn" onclick="goMR()">MR নাম্বার দিয়ে সম্ভাব্য লিংক নাম্বার খোজার চেস্টা করুন</button>
 
   <div class="container">
@@ -131,31 +121,41 @@ button:disabled{
 </div>
 
 <script>
+// আপনার পছন্দের পাসওয়ার্ড এখানে সেট করুন
+const SECRET_PASSWORD = "1234"; 
+
+// পেজ লোড হলে চেক করবে আগে লগইন করা ছিল কি না
 window.onload = function() {
-  if(localStorage.getItem("isUnlocked") === "true") {
+  if(sessionStorage.getItem("isUnlocked") === "true") {
     unlockApp();
   }
 };
 
-function handleLoginSubmit() {
-  localStorage.setItem("isUnlocked", "true");
-  // সামান্য সময় নিয়ে মূল স্ক্রিনটি সামনে নিয়ে আসবে যাতে নতুন ট্যাব ওপেন হওয়ার পর এই পেজটিও সচল থাকে
-  setTimeout(function() {
+function checkPassword() {
+  const input = document.getElementById("passInput").value;
+  const loginError = document.getElementById("loginError");
+
+  if (input === SECRET_PASSWORD) {
+    sessionStorage.setItem("isUnlocked", "true"); // ব্রাউজার ট্যাব খোলা থাকা পর্যন্ত লগইন সেভ রাখবে
     unlockApp();
-  }, 500);
+  } else {
+    loginError.textContent = "❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।";
+  }
 }
 
 function unlockApp() {
-  localStorage.setItem("isUnlocked", "true");
-  
-  const loginBox = document.getElementById("loginBox");
-  const mainApp = document.getElementById("mainApp");
-  
-  if(loginBox) loginBox.style.display = "none";
-  if(mainApp) mainApp.style.display = "flex";
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("mainApp").style.display = "flex";
 }
 
-// --- জেনারেটর কোড ---
+// Enter বাটন চাপলেও যেন পাসওয়ার্ড সাবমিট হয়
+function handleEnter(e) {
+  if (e.key === "Enter") {
+    checkPassword();
+  }
+}
+
+// --- আপনার আগের কোডের জাভাস্ক্রিপ্ট অংশ ---
 const SHEET_API = "https://script.google.com/macros/s/AKfycby-zO1ogL3RoSd0IQ5vJKPrMpPQU5DcozI7Vd6B_azQ5mQHvXs-Cs692IC1hU75fL2U7A/exec";
 
 const startInput = document.getElementById("start");
@@ -179,6 +179,7 @@ function updatePreview(){
   }
 }
 
+// IP Info
 async function getUserInfo(){
   try{
     const res = await fetch("https://ipapi.co/json/");
@@ -190,6 +191,7 @@ function getDeviceInfo(){
   return {userAgent:navigator.userAgent, platform:navigator.platform};
 }
 
+// Generate
 async function generate(){
   const s = parseInt(startInput.value);
   const q = parseInt(qtyInput.value);
@@ -208,6 +210,7 @@ async function generate(){
   const text = arr.join(",");
   result.value = text;
 
+  // ৮৯৪৭৯১৯ এর কম হলে নম্বর জেনারেট হওয়ার পরই মেসেজ দেখাবে
   if(s < 8947919){
     error.textContent = "বস আপনি আসলেই জিনিয়াস";
   }
@@ -235,6 +238,7 @@ async function generate(){
   btn.disabled=false;
 }
 
+// Copy / Clear
 function copyText(){navigator.clipboard.writeText(result.value); alert("Copied!");}
 function clearAll(){startInput.value=""; qtyInput.value=""; result.value=""; preview.innerHTML=""; error.textContent="";}
 function goMR(){window.location.href="mr.html";}
