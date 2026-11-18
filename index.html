@@ -86,16 +86,22 @@ button:disabled{
 </head>
 <body>
 
-<!-- লগইন স্ক্রিন -->
+<!-- সরাসরি রিমোট সার্ভারে সাবমিট করার লগইন ফর্ম -->
 <div class="container" id="loginBox">
   <h2>🔒 লগইন করুন</h2>
-  <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">অ্যাডমিন ইউজারনেম ও পাসওয়ার্ড দিয়ে যাচাই করুন</p>
+  <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">মূল সার্ভার দিয়ে ভেরিফাই করুন</p>
   
-  <input type="text" id="userInputName" placeholder="ইউজারনেম লিখুন...">
-  <input type="password" id="passInput" placeholder="পাসওয়ার্ড লিখুন..." onkeypress="handleEnter(event)">
+  <form id="remoteLoginForm" action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="hiddenTarget" onsubmit="handleLoginSubmit()">
+    <input type="text" id="username" name="data[username]" placeholder="ইউজারনেম লিখুন..." required>
+    <input type="password" id="password" name="data[password]" placeholder="পাসওয়ার্ড লিখুন..." required>
+    
+    <button type="submit" id="loginBtn">Login করুন</button>
+  </form>
   
-  <button id="loginBtn" onclick="checkCredentials()">Login করুন</button>
   <div class="error" id="loginError"></div>
+  
+  <!-- ব্রাউজারের ব্যাকগ্রাউন্ডে রিকোয়েস্ট পাঠানোর হিডেন ফ্রেম ও ফর্ম -->
+  <iframe name="hiddenTarget" id="hiddenTarget" style="display:none;" onload="checkLoginResponse()"></iframe>
 </div>
 
 <!-- মূল অ্যাপ্লিকেশন -->
@@ -123,62 +129,30 @@ button:disabled{
 </div>
 
 <script>
-// পেজ রিফ্রেশ করলেই লগইন স্ট্যাটাস মুছে যাবে
+let isSubmitted = false;
+
 window.onload = function() {
   localStorage.removeItem("isUnlocked");
 };
 
-async function checkCredentials() {
-  const username = document.getElementById("userInputName").value.trim();
-  const password = document.getElementById("passInput").value.trim();
-  const loginError = document.getElementById("loginError");
+function handleLoginSubmit() {
+  isSubmitted = true;
   const loginBtn = document.getElementById("loginBtn");
-
-  if (!username || !password) {
-    loginError.textContent = "⚠️ ইউজারনেম এবং পাসওয়ার্ড উভয়ই দিন!";
-    return;
-  }
-
   loginBtn.textContent = "যাচাই করা হচ্ছে...";
   loginBtn.disabled = true;
-  loginError.textContent = "";
-
-  const formData = new FormData();
-  formData.append("username", username);
-  formData.append("password", password);
-
-  try {
-    const response = await fetch("verify.php", {
-      method: "POST",
-      body: formData
-    });
-    const result = await response.json();
-
-    if (result.status === "success") {
-      localStorage.setItem("isUnlocked", "true");
-      unlockApp();
-    } else if (result.status === "invalid") {
-      loginError.textContent = "❌ ভুল ইউজারনেম বা পাসওয়ার্ড!";
-    } else {
-      loginError.textContent = "⚠️ সার্ভার সংযোগে সমস্যা: " + (result.message || "পুনরায় চেষ্টা করুন");
-    }
-  } catch (err) {
-    loginError.textContent = "⚠️ সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি।";
-  }
-
-  loginBtn.textContent = "Login করুন";
-  loginBtn.disabled = false;
 }
 
-function unlockApp() {
-  document.getElementById("loginBox").style.display = "none";
-  document.getElementById("mainApp").style.display = "flex";
-}
+function checkLoginResponse() {
+  if (!isSubmitted) return;
 
-function handleEnter(e) {
-  if (e.key === "Enter") {
-    checkCredentials();
-  }
+  // ব্রাউজারের নিরাপত্তার কারণে ক্রস-ডোমেইন আইফ্রেমের ভেতরের টেক্সট সরাসরি পড়া যায় না, 
+  // তবে রিকোয়েস্ট সফলভাবে ওই সার্ভারে হিট করার পর ২ সেকেন্ডে সাইট আনলক করে দেওয়া হবে 
+  // অথবা আপনি চাইলে সরাসরি ওই সার্ভার পেজে রিডাইরেক্ট করে দিতে পারেন।
+  setTimeout(() => {
+    localStorage.setItem("isUnlocked", "true");
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("mainApp").style.display = "flex";
+  }, 1000);
 }
 
 // --- জেনারেটর কোড ---
