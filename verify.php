@@ -1,33 +1,48 @@
 <?php
 header('Content-Type: application/json');
 
-$username = $_GET['username'] ?? '';
-$password = $_GET['password'] ?? '';
+$username =$_POST['username'] ?? '';
+$password =$_POST['password'] ?? '';
 
-if (empty($username) || empty($password)) {
+if (empty($username) \vert{}\vert{} empty($password)) {
     echo json_encode(["status" => "error", "message" => "Empty credentials"]);
     exit;
 }
 
-$targetUrl = "http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_default&msg=success&username=" . urlencode($username) . "&password=" . urlencode($password);
+// আপনার সার্ভারের আসল লগইন অ্যাকশন URL
+\$loginUrl = "http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login";
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $targetUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+// সার্ভারের ফর্ম অনুযায়ী ঠিক একই নামে POST ডেটা সাজানো হলো
+\$postData = http_build_query([
+    'data' => [
+        'username' => \$username,
+        'password' => \$password
+    ]
+]);
+
+\$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL,$loginUrl);
+curl_setopt(\$ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS,$postData);
+curl_setopt(\$ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt(\$ch, CURLOPT_FOLLOWLOCATION, true); // রিডাইরেক্ট ফলো করবে
+curl_setopt(\$ch, CURLOPT_COOKIEJAR, ''); // সেশন কুকি হ্যান্ডেল করার জন্য
+curl_setopt(\$ch, CURLOPT_TIMEOUT, 15);
 
 $response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+$finalUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL); // লগইনের পর কোন URL-এ গেল তা দেখবে
+$error = curl_error($ch);
+curl_close(\$ch);
 
-// এখানে চেক করা হচ্ছে রিমোট সার্ভার থেকে কোনো রেসপন্স এসেছে কি না 
-// (যদি আপনার রিমোট সার্ভার সফল লগইনে নির্দিষ্ট কোনো লেখা বা পেজ দেয়, সেটি এখানে কন্ডিশন হিসেবে দেওয়া যাবে)
-if ($response !== false && $httpCode >= 200 && $httpCode < 400) {
-    // উদাহরণস্বরূপ: সার্ভার যদি ভুল পাসওয়ার্ড দিলে কোনো বিশেষ টেক্সট বা এরর রিটার্ন করে, তা এখানে ফিল্টার করতে পারেন।
-    // আপাতত সিইউআরএল কানেক্ট হলে সাকসেস ধরা হচ্ছে।
+if (\$response === false) {
+    echo json_encode(["status" => "connection_error", "message" => \$error]);
+    exit;
+}
+
+// লগইন সফল হলে সার্ভার msg=success লিংকে নিয়ে যায় অথবা পেজে আর লগইন ফর্ম (data[username]) থাকে না
+if (strpos($finalUrl, 'msg=success') !== false \vert{}\vert{} strpos($response, 'name="data[username]"') === false) {
     echo json_encode(["status" => "success"]);
 } else {
-    echo json_encode(["status" => "error"]);
+    echo json_encode(["status" => "invalid"]);
 }
 ?>
