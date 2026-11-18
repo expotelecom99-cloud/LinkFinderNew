@@ -74,38 +74,79 @@ button:disabled{
   font-weight:700;
   border-radius:10px;
   cursor:pointer;
+  z-index: 1000;
 }
 #loginBox {
   text-align: center;
   max-width: 380px;
 }
 #mainApp {
+  width: 100%; 
   display: none; 
+  justify-content: center;
 }
 </style>
 </head>
 <body>
 
-<!-- লগইন স্ক্রিন (নতুন ট্যাবে রিমোট সার্ভারে সাবমিট হবে) -->
+<!-- লগইন স্ক্রিন -->
 <div class="container" id="loginBox">
   <h2>🔒 লগইন করুন</h2>
   <p style="font-size:14px; margin-bottom:15px; opacity:0.8;">মূল সার্ভারে লগইন করতে তথ্য দিন</p>
   
-  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="_blank" onsubmit="allowUnlock()">
+  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="_blank">
     <input type="text" name="data[username]" placeholder="ইউজারনেম লিখুন..." required>
     <input type="password" name="data[password]" placeholder="পাসওয়ার্ড লিখুন..." required>
     
     <button type="submit" style="margin-top: 10px;">সরাসরি সার্ভারে লগইন করুন</button>
   </form>
 
-  <button onclick="unlockApp()" style="margin-top: 10px; background: #ffcc00; color: #000;">লগইন করার পর এখানে ক্লিক করে টুলটি চালু করুন</button>
+  <!-- নিচের বোতামে ক্লিক করলে এখন নিশ্চিত কাজ করবে -->
+  <button type="button" onclick="unlockApp()" style="margin-top: 15px; background: #ffcc00; color: #000;">লগইন করার পর এখানে ক্লিক করে টুলটি চালু করুন</button>
 </div>
 
 <!-- মূল অ্যাপ্লিকেশন -->
-<div id="mainApp" style="width: 100%; display: none; justify-content: center;">
+<div id="mainApp">
   <button class="left-button" id="mrBtn" onclick="goMR()">MR নাম্বার দিয়ে সম্ভাব্য লিংক নাম্বার খোজার চেস্টা করুন</button>
 
   <div class="container">
     <h2>🔢 Number Generator</h2>
 
-    <input type="number" id="start
+    <input type="number" id="start" placeholder="এখানে লিংক এর নাম্বার টি দিন">
+    <input type="number" id="qty" placeholder="রিসিপ্ট এর সংখ্যা লিখুন">
+
+    <div class="info" id="preview"></div>
+    <div class="error" id="error"></div>
+
+    <button id="genBtn" onclick="generate()">Generate</button>
+
+    <textarea id="result" rows="6" placeholder="Generated numbers..."></textarea>
+
+    <div class="actions">
+      <button id="copyBtn" onclick="copyText()">📋 Copy</button>
+      <button id="clearBtn" onclick="clearAll()">🗑 Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onload = function() {
+  if(localStorage.getItem("isUnlocked") === "true") {
+    unlockApp();
+  }
+};
+
+function unlockApp() {
+  localStorage.setItem("isUnlocked", "true");
+  
+  const loginBox = document.getElementById("loginBox");
+  const mainApp = document.getElementById("mainApp");
+  
+  if(loginBox) loginBox.style.display = "none";
+  if(mainApp) mainApp.style.display = "flex";
+}
+
+// --- জেনারেটর কোড ---
+const SHEET_API = "https://script.google.com/macros/s/AKfycby-zO1ogL3RoSd0IQ5vJKPrMpPQU5DcozI7Vd6B_azQ5mQHvXs-Cs692IC1hU75fL2U7A/exec";
+
+const startInput = document.
