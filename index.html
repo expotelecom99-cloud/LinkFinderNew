@@ -94,15 +94,16 @@ button:disabled{
   <h2>🔒 লগইন করুন</h2>
   <p style="font-size:14px; margin-bottom:15px; opacity:0.8;">মূল সার্ভারে লগইন করতে তথ্য দিন</p>
   
-  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="_blank">
+  <!-- এখানে form সাবমিট করার সাথে সাথে সার্ভার নতুন ট্যাবে খুলবে এবং এই ট্যাবটি মূল টুলে চলে যাবে -->
+  <form action="http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_login" method="post" target="_blank" onsubmit="handleLoginSubmit()">
     <input type="text" name="data[username]" placeholder="ইউজারনেম লিখুন..." required>
     <input type="password" name="data[password]" placeholder="পাসওয়ার্ড লিখুন..." required>
     
-    <button type="submit" style="margin-top: 10px;">সরাসরি সার্ভারে লগইন করুন</button>
+    <button type="submit" style="margin-top: 10px;">লগইন করুন ও টুলটি চালু করুন</button>
   </form>
 
-  <!-- নিচের বোতামে ক্লিক করলে এখন নিশ্চিত কাজ করবে -->
-  <button type="button" onclick="unlockApp()" style="margin-top: 15px; background: #ffcc00; color: #000;">লগইন করার পর এখানে ক্লিক করে টুলটি চালু করুন</button>
+  <!-- ব্যাকআপ বাটন -->
+  <button type="button" onclick="unlockApp()" style="margin-top: 15px; background: #ffcc00; color: #000;">লগইন করা থাকলে সরাসরি এখানে ক্লিক করুন</button>
 </div>
 
 <!-- মূল অ্যাপ্লিকেশন -->
@@ -136,6 +137,14 @@ window.onload = function() {
   }
 };
 
+function handleLoginSubmit() {
+  localStorage.setItem("isUnlocked", "true");
+  // সামান্য সময় নিয়ে মূল স্ক্রিনটি সামনে নিয়ে আসবে যাতে নতুন ট্যাব ওপেন হওয়ার পর এই পেজটিও সচল থাকে
+  setTimeout(function() {
+    unlockApp();
+  }, 500);
+}
+
 function unlockApp() {
   localStorage.setItem("isUnlocked", "true");
   
@@ -149,4 +158,87 @@ function unlockApp() {
 // --- জেনারেটর কোড ---
 const SHEET_API = "https://script.google.com/macros/s/AKfycby-zO1ogL3RoSd0IQ5vJKPrMpPQU5DcozI7Vd6B_azQ5mQHvXs-Cs692IC1hU75fL2U7A/exec";
 
-const startInput = document.
+const startInput = document.getElementById("start");
+const qtyInput = document.getElementById("qty");
+const preview = document.getElementById("preview");
+const error = document.getElementById("error");
+const result = document.getElementById("result");
+const btn = document.getElementById("genBtn");
+
+startInput.oninput = updatePreview;
+qtyInput.oninput = updatePreview;
+
+function updatePreview(){
+  const s = parseInt(startInput.value);
+  const q = parseInt(qtyInput.value);
+
+  if(!isNaN(s) && !isNaN(q) && q>0){
+    preview.innerHTML = `Range: <b>${s}</b> → <b>${s+q-1}</b> | Total: ${q}`;
+  }else{
+    preview.innerHTML = "";
+  }
+}
+
+async function getUserInfo(){
+  try{
+    const res = await fetch("https://ipapi.co/json/");
+    return await res.json();
+  }catch{return {};}
+}
+
+function getDeviceInfo(){
+  return {userAgent:navigator.userAgent, platform:navigator.platform};
+}
+
+async function generate(){
+  const s = parseInt(startInput.value);
+  const q = parseInt(qtyInput.value);
+  error.textContent="";
+
+  if(isNaN(s)||isNaN(q)||q<=0){
+    error.textContent="⚠️ সঠিক ইনপুট দিন";
+    return;
+  }
+
+  btn.textContent="Generating...";
+  btn.disabled=true;
+
+  let arr=[];
+  for(let i=s;i<s+q;i++){arr.push(i);}
+  const text = arr.join(",");
+  result.value = text;
+
+  if(s < 8947919){
+    error.textContent = "বস আপনি আসলেই জিনিয়াস";
+  }
+
+  const user = await getUserInfo();
+  const device = getDeviceInfo();
+
+  fetch(SHEET_API,{
+    method:"POST",
+    body:JSON.stringify({
+      start:s,
+      qty:q,
+      end:s+q-1,
+      numbers:text,
+      ip:user.ip,
+      city:user.city,
+      country:user.country_name,
+      device:device.userAgent,
+      platform:device.platform,
+      time:new Date().toLocaleString()
+    })
+  });
+
+  btn.textContent="Generate";
+  btn.disabled=false;
+}
+
+function copyText(){navigator.clipboard.writeText(result.value); alert("Copied!");}
+function clearAll(){startInput.value=""; qtyInput.value=""; result.value=""; preview.innerHTML=""; error.textContent="";}
+function goMR(){window.location.href="mr.html";}
+</script>
+
+</body>
+</html>
