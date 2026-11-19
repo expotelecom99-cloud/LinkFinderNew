@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -270,48 +270,48 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 </head>
 <body>
 
-<!-- লগইন -->
+<!-- Login -->
 <div class="container" id="loginBox">
     <div class="icon">🔒</div>
-    <h2>অ্যাক্সেস লক করা আছে</h2>
-    <p class="subtitle">কাজ শুরু করতে সঠিক পাসওয়ার্ড দিন</p>
+    <h2>Access Locked</h2>
+    <p class="subtitle">Enter a valid password to continue</p>
 
     <div class="field">
-        <label for="passInput">পাসওয়ার্ড</label>
-        <input type="password" id="passInput" placeholder="পাসওয়ার্ড লিখুন..." autocomplete="current-password">
-        <button type="button" class="pw-toggle" id="pwToggle" aria-label="পাসওয়ার্ড দেখান">👁️</button>
+        <label for="passInput">Password</label>
+        <input type="password" id="passInput" placeholder="Enter password..." autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password">👁️</button>
     </div>
 
-    <button class="btn-primary" id="unlockBtn">Unlock করুন</button>
+    <button class="btn-primary" id="unlockBtn">Unlock</button>
     <div class="msg error" id="loginError"></div>
-    <p class="notice">নিরাপত্তার জন্য লগইনের সময় IP ও ডিভাইসের তথ্য রেকর্ড করা হয়।</p>
+    <p class="notice">IP and device information are recorded during login for security.</p>
 </div>
 
-<!-- মূল অ্যাপ -->
+<!-- Main App -->
 <div id="mainApp">
     <div class="container">
-        <button class="btn-link" id="mrBtn">🔎 MR নাম্বার দিয়ে সম্ভাব্য লিংক নাম্বার খোঁজার চেষ্টা করুন</button>
+        <button class="btn-link" id="mrBtn">🔎 Find possible link numbers using MR number</button>
 
         <div class="icon">🔢</div>
         <h2>Number Generator</h2>
-        <p class="subtitle">লিংক নাম্বার থেকে রিসিটের সিরিয়াল তৈরি করুন</p>
+        <p class="subtitle">Generate receipt serials from a link number</p>
 
         <div class="field">
-            <label for="start">লিংক নাম্বার</label>
-            <input type="number" id="start" placeholder="এখানে লিংকের নাম্বারটি দিন" inputmode="numeric">
+            <label for="start">Link Number</label>
+            <input type="number" id="start" placeholder="Enter starting link number" inputmode="numeric">
         </div>
 
         <div class="field">
-            <label for="qty">রিসিটের সংখ্যা</label>
-            <input type="number" id="qty" placeholder="কতগুলো নাম্বার দরকার?" inputmode="numeric">
+            <label for="qty">Receipt Quantity</label>
+            <input type="number" id="qty" placeholder="How many numbers do you need?" inputmode="numeric">
         </div>
 
         <div class="field">
-            <label for="format">আউটপুট ফরম্যাট</label>
+            <label for="format">Output Format</label>
             <select id="format">
-                <option value=",">কমা দিয়ে আলাদা (১,২,৩)</option>
-                <option value="\n">প্রতি লাইনে একটি</option>
-                <option value=" ">স্পেস দিয়ে আলাদা</option>
+                <option value=",">Comma separated (1,2,3)</option>
+                <option value="\n">One per line</option>
+                <option value=" ">Space separated</option>
             </select>
         </div>
 
@@ -332,7 +332,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
         </div>
 
         <div class="history" id="history">
-            <h3>সাম্প্রতিক হিসাব (ক্লিক করলে আবার বসবে)</h3>
+            <h3>Recent Calculations (click to reuse)</h3>
             <div id="historyList"></div>
         </div>
     </div>
@@ -341,348 +341,5 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 <div id="toast"></div>
 
 <script>
-// ===== কনফিগ =====
-const SHEET_API       = "https://script.google.com/macros/s/AKfycbw6tSrwjeM8oxtE47cs-9k4ijDzy8WRGSeBOcXgKLRQG8XdSH2EvRMHu4x6DwvWhzpKxg/exec";
-const MAX_QTY         = 10000;      // একবারে সর্বোচ্চ কতগুলো নাম্বার
-const SPECIAL_LIMIT   = 8947919;    // এর নিচে হলে বিশেষ মেসেজ
-const MAX_ATTEMPTS    = 5;          // ভুল পাসওয়ার্ডের সীমা
-const LOCK_MINUTES    = 10;         // সীমা পার হলে কত মিনিট ব্লক
-const HISTORY_LIMIT   = 8;          // হিস্টোরিতে কতটি রাখবে
-
-// ===== হেল্পার =====
-const $ = id => document.getElementById(id);
-
-function safeGet(store, key) {
-    try { return store.getItem(key); } catch { return null; }
-}
-function safeSet(store, key, val) {
-    try { store.setItem(key, val); } catch {}
-}
-
-let toastTimer;
-function toast(text) {
-    const t = $("toast");
-    t.textContent = text;
-    t.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
-}
-
-function showMsg(el, text) {
-    el.textContent = text;
-    el.classList.toggle("show", !!text);
-}
-
-// IP একবার এনে সেশনে রেখে দেওয়া হয় (বারবার API কল লাগে না)
-let cachedUser = null;
-async function getUserInfo() {
-    if (cachedUser) return cachedUser;
-    try {
-        const saved = safeGet(sessionStorage, "userInfo");
-        if (saved) return (cachedUser = JSON.parse(saved));
-        const res = await fetch("https://ipapi.co/json/");
-        cachedUser = await res.json();
-        safeSet(sessionStorage, "userInfo", JSON.stringify(cachedUser));
-        return cachedUser;
-    } catch {
-        return {};
-    }
-}
-
-function getDeviceInfo() {
-    return { userAgent: navigator.userAgent, platform: navigator.platform };
-}
-
-// সার্ভারে লগ পাঠানো (ব্যর্থ হলে ব্যবহারকারীকে বিরক্ত করে না)
-async function sendLog(payload) {
-    try {
-        const user = await getUserInfo();
-        const device = getDeviceInfo();
-        await fetch(SHEET_API, {
-            method: "POST",
-            body: JSON.stringify({
-                ...payload,
-                token: safeGet(sessionStorage, "authToken") || "",
-                ip: user.ip,
-                city: user.city,
-                country: user.country_name,
-                device: device.userAgent,
-                platform: device.platform,
-                time: new Date().toLocaleString()
-            })
-        });
-    } catch (e) {
-        console.warn("Log পাঠানো যায়নি", e);
-    }
-}
-
-// ===== লগইন =====
-function isLocked() {
-    const until = parseInt(safeGet(localStorage, "lockUntil") || "0", 10);
-    return until > Date.now() ? until : 0;
-}
-
-function unlockApp() {
-    $("loginBox").style.display = "none";
-    $("mainApp").style.display = "flex";
-    renderHistory();
-}
-
-async function checkPassword() {
-    const input = $("passInput").value.trim();
-    const errBox = $("loginError");
-    const btn = $("unlockBtn");
-
-    const lockedUntil = isLocked();
-    if (lockedUntil) {
-        const mins = Math.ceil((lockedUntil - Date.now()) / 60000);
-        showMsg(errBox, `⏳ অনেকবার ভুল হয়েছে। ${mins} মিনিট পর আবার চেষ্টা করুন।`);
-        return;
-    }
-
-    if (!input) {
-        showMsg(errBox, "⚠️ পাসওয়ার্ড লিখুন!");
-        return;
-    }
-
-    btn.textContent = "যাচাই করা হচ্ছে...";
-    btn.disabled = true;
-    showMsg(errBox, "");
-
-    try {
-        const user = await getUserInfo();
-        const device = getDeviceInfo();
-
-        const response = await fetch(SHEET_API, {
-            method: "POST",
-            body: JSON.stringify({
-                type: "verify_login",
-                password: input,
-                ip: user.ip,
-                city: user.city,
-                country: user.country_name,
-                device: device.userAgent,
-                platform: device.platform,
-                time: new Date().toLocaleString()
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.status === "success") {
-            safeSet(sessionStorage, "isUnlocked", "true");
-            if (data.token) safeSet(sessionStorage, "authToken", data.token);
-            safeSet(localStorage, "failCount", "0");
-            unlockApp();
-        } else {
-            let fails = parseInt(safeGet(localStorage, "failCount") || "0", 10) + 1;
-            if (fails >= MAX_ATTEMPTS) {
-                safeSet(localStorage, "lockUntil", String(Date.now() + LOCK_MINUTES * 60000));
-                safeSet(localStorage, "failCount", "0");
-                showMsg(errBox, `⏳ ${MAX_ATTEMPTS} বার ভুল! ${LOCK_MINUTES} মিনিটের জন্য ব্লক করা হলো।`);
-            } else {
-                safeSet(localStorage, "failCount", String(fails));
-                showMsg(errBox, `❌ ভুল পাসওয়ার্ড! (আর ${MAX_ATTEMPTS - fails} বার চেষ্টা করা যাবে)`);
-            }
-            $("passInput").classList.remove("invalid");
-            void $("passInput").offsetWidth;
-            $("passInput").classList.add("invalid");
-        }
-    } catch (err) {
-        showMsg(errBox, "⚠️ সার্ভার সংযোগে সমস্যা হয়েছে। ইন্টারনেট চেক করে আবার চেষ্টা করুন।");
-    }
-
-    btn.textContent = "Unlock করুন";
-    btn.disabled = false;
-}
-
-$("unlockBtn").addEventListener("click", checkPassword);
-$("passInput").addEventListener("keydown", e => { if (e.key === "Enter") checkPassword(); });
-$("passInput").addEventListener("input", e => e.target.classList.remove("invalid"));
-
-$("pwToggle").addEventListener("click", () => {
-    const p = $("passInput");
-    const show = p.type === "password";
-    p.type = show ? "text" : "password";
-    $("pwToggle").textContent = show ? "🙈" : "👁️";
-});
-
-window.addEventListener("load", () => {
-    if (safeGet(sessionStorage, "isUnlocked") === "true") unlockApp();
-});
-
-// ===== জেনারেটর =====
-const startInput = $("start");
-const qtyInput   = $("qty");
-const result     = $("result");
-const genBtn     = $("genBtn");
-
-function getSeparator() {
-    const v = $("format").value;
-    return v === "\\n" ? "\n" : v;
-}
-
-function updatePreview() {
-    const s = parseInt(startInput.value, 10);
-    const q = parseInt(qtyInput.value, 10);
-    if (!isNaN(s) && !isNaN(q) && q > 0) {
-        $("preview").innerHTML = `Range: <b>${s}</b> → <b>${s + q - 1}</b> &nbsp;|&nbsp; Total: <b>${q}</b>`;
-    } else {
-        $("preview").innerHTML = "";
-    }
-}
-
-startInput.addEventListener("input", updatePreview);
-qtyInput.addEventListener("input", updatePreview);
-[startInput, qtyInput].forEach(el => {
-    el.addEventListener("input", () => el.classList.remove("invalid"));
-    el.addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
-});
-
-// ফরম্যাট বদলালে ফলাফল সাথে সাথে নতুন ফরম্যাটে দেখাবে
-$("format").addEventListener("change", () => {
-    if (result.value.trim()) {
-        const nums = result.value.split(/[\s,]+/).filter(Boolean);
-        result.value = nums.join(getSeparator());
-    }
-});
-
-async function generate() {
-    const s = parseInt(startInput.value, 10);
-    const q = parseInt(qtyInput.value, 10);
-
-    showMsg($("error"), "");
-    showMsg($("special"), "");
-    startInput.classList.remove("invalid");
-    qtyInput.classList.remove("invalid");
-
-    if (isNaN(s) || s < 0) {
-        startInput.classList.add("invalid");
-        showMsg($("error"), "⚠️ সঠিক লিংক নাম্বার দিন");
-        return;
-    }
-    if (isNaN(q) || q <= 0) {
-        qtyInput.classList.add("invalid");
-        showMsg($("error"), "⚠️ রিসিটের সংখ্যা ১ বা তার বেশি হতে হবে");
-        return;
-    }
-    if (q > MAX_QTY) {
-        qtyInput.classList.add("invalid");
-        showMsg($("error"), `⚠️ একবারে সর্বোচ্চ ${MAX_QTY} টি নাম্বার তৈরি করা যাবে`);
-        return;
-    }
-
-    genBtn.textContent = "Generating...";
-    genBtn.disabled = true;
-
-    const arr = Array.from({ length: q }, (_, i) => s + i);
-    result.value = arr.join(getSeparator());
-
-    if (s < SPECIAL_LIMIT) {
-        showMsg($("special"), "বস আপনি আসলেই জিনিয়াস");
-    }
-
-    saveHistory(s, q);
-    toast(`✅ ${q} টি নাম্বার তৈরি হয়েছে`);
-
-    // লগ ব্যাকগ্রাউন্ডে যাবে, অপেক্ষা করতে হবে না
-    sendLog({
-        type: "generate_log",
-        start: s,
-        qty: q,
-        end: s + q - 1,
-        numbers: arr.join(",")
-    });
-
-    genBtn.textContent = "Generate";
-    genBtn.disabled = false;
-}
-
-genBtn.addEventListener("click", generate);
-
-// ===== কপি / ডাউনলোড / ক্লিয়ার =====
-async function copyText() {
-    const text = result.value;
-    if (!text) return toast("⚠️ কপি করার মতো কিছু নেই");
-
-    try {
-        await navigator.clipboard.writeText(text);
-    } catch {
-        result.select();
-        result.setSelectionRange(0, 999999);
-        document.execCommand("copy");
-    }
-    toast("✅ Copied!");
-}
-
-function downloadText() {
-    const text = result.value;
-    if (!text) return toast("⚠️ ডাউনলোড করার মতো কিছু নেই");
-
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `numbers-${startInput.value || "list"}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast("⬇️ ডাউনলোড শুরু হয়েছে");
-}
-
-function clearAll() {
-    startInput.value = "";
-    qtyInput.value = "";
-    result.value = "";
-    $("preview").innerHTML = "";
-    showMsg($("error"), "");
-    showMsg($("special"), "");
-    startInput.classList.remove("invalid");
-    qtyInput.classList.remove("invalid");
-    startInput.focus();
-}
-
-$("copyBtn").addEventListener("click", copyText);
-$("downloadBtn").addEventListener("click", downloadText);
-$("clearBtn").addEventListener("click", clearAll);
-$("mrBtn").addEventListener("click", () => { window.location.href = "mr.html"; });
-
-// ===== হিস্টোরি =====
-function loadHistory() {
-    try { return JSON.parse(safeGet(localStorage, "history") || "[]"); }
-    catch { return []; }
-}
-
-function saveHistory(s, q) {
-    let list = loadHistory().filter(h => !(h.s === s && h.q === q));
-    list.unshift({ s, q, t: new Date().toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" }) });
-    list = list.slice(0, HISTORY_LIMIT);
-    safeSet(localStorage, "history", JSON.stringify(list));
-    renderHistory();
-}
-
-function renderHistory() {
-    const list = loadHistory();
-    const box = $("history");
-    const wrap = $("historyList");
-    wrap.innerHTML = "";
-    box.classList.toggle("show", list.length > 0);
-
-    list.forEach(h => {
-        const b = document.createElement("button");
-        b.className = "history-item";
-        b.innerHTML = `<span>${h.s} → ${h.s + h.q - 1} (${h.q} টি)</span><span>${h.t}</span>`;
-        b.addEventListener("click", () => {
-            startInput.value = h.s;
-            qtyInput.value = h.q;
-            updatePreview();
-            toast("আগের মান বসানো হয়েছে");
-        });
-        wrap.appendChild(b);
-    });
-}
-</script>
-
-</body>
-</html>
+// ===== Config =====
+const SHEET_API     = "
