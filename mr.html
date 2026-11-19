@@ -3,134 +3,342 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>রিসিট নাম্বার খুজুন</title>
+<title>রিসিট নাম্বার খুঁজুন</title>
 
-<!-- Google Font -->
-<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --accent: #06b6d4;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --bg-input: #f8fafc;
+    --error: #ef4444;
+    --success: #10b981;
+}
+
+* { box-sizing: border-box; }
+
 body {
-    font-family: 'Tiro Bangla', serif;
-    background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+    font-family: 'Hind Siliguri', sans-serif;
+    margin: 0;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    margin: 0;
+    padding: 20px;
+    color: var(--text);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #06b6d4 100%);
+    background-size: 200% 200%;
+    animation: bgMove 12s ease infinite;
+}
+
+@keyframes bgMove {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .container {
-    background: #ffffff;
-    padding: 30px 25px;
-    border-radius: 15px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    text-align: center;
+    width: 100%;
+    max-width: 440px;
+    padding: 34px 28px 30px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 22px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    animation: popIn 0.6s ease;
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: translateY(25px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
 }
 
 h2 {
-    margin-bottom: 25px;
-    color: #333;
-    font-size: 24px;
+    margin: 0 0 6px;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.subtitle {
+    margin: 0 0 26px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.field { margin-bottom: 16px; }
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
 }
 
 input[type="number"] {
-    width: 90%;
-    padding: 12px 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    width: 100%;
+    padding: 13px 15px;
+    font-family: inherit;
     font-size: 16px;
-    transition: 0.3s;
+    color: var(--text);
+    background: var(--bg-input);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.25s ease;
+    -moz-appearance: textfield;
 }
 
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"]::placeholder { color: #a0aec0; }
+
 input[type="number"]:focus {
-    border-color: #4caf50;
-    box-shadow: 0 0 5px rgba(76,175,80,0.5);
     outline: none;
+    background: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+
+input.invalid {
+    border-color: var(--error);
+    background: #fef2f2;
+    animation: shake 0.35s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-6px); }
+    75%      { transform: translateX(6px); }
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
 }
 
 button {
-    padding: 12px 25px;
-    background: #4caf50;
-    color: white;
-    border: none;
-    cursor: pointer;
+    font-family: inherit;
     font-size: 16px;
-    border-radius: 8px;
-    transition: 0.3s;
-    margin-top: 10px;
+    font-weight: 600;
+    padding: 13px 20px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s ease;
 }
 
-button:hover {
-    background: #388e3c;
+#calcBtn {
+    flex: 1;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
 }
+
+#calcBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(79, 70, 229, 0.45);
+}
+
+#calcBtn:active { transform: translateY(0); }
+
+#resetBtn {
+    color: var(--muted);
+    background: #f1f5f9;
+}
+
+#resetBtn:hover { background: #e2e8f0; }
 
 .result {
-    margin-top: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
+    margin-top: 22px;
+    display: none;
 }
 
-@media(max-width: 480px){
-    h2 {
-        font-size: 20px;
-    }
-    input[type="number"] {
-        font-size: 14px;
-        padding: 10px;
-    }
-    button {
-        font-size: 14px;
-        padding: 10px 20px;
-    }
+.result.show {
+    display: block;
+    animation: popIn 0.45s ease;
+}
+
+.result-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    margin-bottom: 10px;
+}
+
+.result-card span:first-child {
+    font-size: 15px;
+    color: var(--muted);
+}
+
+.result-card span:last-child {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.result-card.final {
+    color: #fff;
+    background: linear-gradient(135deg, var(--success), #059669);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.result-card.final span:first-child { color: rgba(255, 255, 255, 0.9); }
+.result-card.final span:last-child  { font-size: 26px; }
+
+.error-msg {
+    margin-top: 18px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--error);
+    background: #fef2f2;
+    border-radius: 12px;
+    display: none;
+}
+
+.error-msg.show {
+    display: block;
+    animation: popIn 0.3s ease;
+}
+
+@media (max-width: 480px) {
+    .container { padding: 28px 20px 24px; }
+    h2 { font-size: 22px; }
+    input[type="number"] { font-size: 15px; padding: 12px; }
+    button { font-size: 15px; padding: 12px 16px; }
+    .result-card.final span:last-child { font-size: 22px; }
 }
 </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="icon">🧾</div>
     <h2>MR হিসাব ক্যালকুলেটর</h2>
+    <p class="subtitle">হারিয়ে যাওয়া রিসিটের নাম্বার সহজেই খুঁজে বের করুন</p>
 
-    <input type="number" id="mr1" placeholder="সর্বশেষ MR নাম্বার (যেকোন একটি)">
-    <input type="number" id="receive" placeholder="উপরের MR নাম্বার এর লিংক নাম্বার">
-    <input type="number" id="mr2" placeholder="হারিয়ে যাওয়া রিসিট এর MR নাম্বার">
-    
-    <br>
-    <button id="calcBtn">ক্লিক করুন</button>
+    <div class="field">
+        <label for="mr1">সর্বশেষ MR নাম্বার</label>
+        <input type="number" id="mr1" placeholder="যেকোনো একটি নাম্বার লিখুন" inputmode="numeric">
+    </div>
 
-    <div class="result" id="output"></div>
+    <div class="field">
+        <label for="receive">লিংক নাম্বার</label>
+        <input type="number" id="receive" placeholder="উপরের MR নাম্বারের লিংক নাম্বার" inputmode="numeric">
+    </div>
+
+    <div class="field">
+        <label for="mr2">হারিয়ে যাওয়া MR নাম্বার</label>
+        <input type="number" id="mr2" placeholder="হারিয়ে যাওয়া রিসিটের MR নাম্বার" inputmode="numeric">
+    </div>
+
+    <div class="buttons">
+        <button id="calcBtn">হিসাব করুন</button>
+        <button id="resetBtn" type="button">রিসেট</button>
+    </div>
+
+    <div class="error-msg" id="error">সব ঘর পূরণ করুন!</div>
+
+    <div class="result" id="output">
+        <div class="result-card">
+            <span>পার্থক্য</span>
+            <span id="diff">0</span>
+        </div>
+        <div class="result-card final">
+            <span>ফাইনাল ফল</span>
+            <span id="final">0</span>
+        </div>
+    </div>
 </div>
 
 <script>
-function calculate() {
-    let mr1 = parseFloat(document.getElementById("mr1").value);
-    let receive = parseFloat(document.getElementById("receive").value);
-    let mr2 = parseFloat(document.getElementById("mr2").value);
+const fields = ["mr1", "receive", "mr2"].map(id => document.getElementById(id));
+const output = document.getElementById("output");
+const errorBox = document.getElementById("error");
 
-    if (isNaN(mr1) || isNaN(receive) || isNaN(mr2)) {
-        document.getElementById("output").innerHTML = "সব ঘর পূরণ করুন!";
+function calculate() {
+    const [mr1, receive, mr2] = fields.map(f => parseFloat(f.value));
+
+    // আগের ফলাফল ও এরর মুছে ফেলা
+    output.classList.remove("show");
+    errorBox.classList.remove("show");
+    fields.forEach(f => f.classList.remove("invalid"));
+
+    // ফাঁকা ঘর চেক
+    let hasError = false;
+    fields.forEach(f => {
+        if (isNaN(parseFloat(f.value))) {
+            void f.offsetWidth; // অ্যানিমেশন রিস্টার্ট
+            f.classList.add("invalid");
+            hasError = true;
+        }
+    });
+
+    if (hasError) {
+        errorBox.classList.add("show");
         return;
     }
 
-    let difference = mr2 - mr1;
-    let finalResult = difference + receive;
+    const difference  = mr2 - mr1;
+    const finalResult = difference + receive;
 
-    document.getElementById("output").innerHTML =
-        "পার্থক্য: " + difference + "<br>ফাইনাল ফল: " + finalResult;
+    document.getElementById("diff").textContent  = difference;
+    document.getElementById("final").textContent = finalResult;
+    output.classList.add("show");
+}
+
+function resetAll() {
+    fields.forEach(f => {
+        f.value = "";
+        f.classList.remove("invalid");
+    });
+    output.classList.remove("show");
+    errorBox.classList.remove("show");
+    fields[0].focus();
 }
 
 document.getElementById("calcBtn").addEventListener("click", calculate);
+document.getElementById("resetBtn").addEventListener("click", resetAll);
 
-document.querySelectorAll("input").forEach(input => {
-    input.addEventListener("keydown", function(event) {
-        if (event.key === "Enter") {
-            event.preventDefault();
+fields.forEach(input => {
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
             calculate();
         }
     });
+    input.addEventListener("input", () => input.classList.remove("invalid"));
 });
 </script>
 
