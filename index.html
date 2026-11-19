@@ -148,7 +148,7 @@ async function checkPassword() {
     const user = await getUserInfo();
     const device = getDeviceInfo();
 
-    // গুগল শিটের মাধ্যমে সার্ভার সাইডে পাসওয়ার্ড যাচাই করা হচ্ছে
+    // গুগল শিটের মাধ্যমে সার্ভার সাইডে পাসওয়ার্ড যাচাই করা হচ্ছে
     const response = await fetch(SHEET_API, {
       method: "POST",
       body: JSON.stringify({
@@ -172,7 +172,7 @@ async function checkPassword() {
       loginError.textContent = "❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।";
     }
   } catch (err) {
-    loginError.textContent = "⚠️ সার্ভার সংযোগে সমস্যা হয়েছে।";
+    loginError.textContent = "⚠️ সার্ভার সংযোগে সমস্যা হয়েছে।";
   }
 
   unlockBtn.textContent = "Unlock করুন";
@@ -269,7 +269,33 @@ async function generate(){
   genBtn.disabled=false;
 }
 
-function copyText(){navigator.clipboard.writeText(result.value); alert("Copied!");}
+// Copy / Clear
+function copyText(){
+  const copyBtn = document.getElementById("copyBtn");
+  const textToCopy = result.value;
+
+  if(!textToCopy) return;
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(textToCopy).catch(() => {
+      fallbackCopy(textToCopy);
+    });
+  }else{
+    fallbackCopy(textToCopy);
+  }
+
+  copyBtn.textContent = "✅ Copied!";
+  setTimeout(() => {
+    copyBtn.textContent = "📋 Copy";
+  }, 2000);
+}
+
+function fallbackCopy(text){
+  result.select();
+  result.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+}
+
 function clearAll(){startInput.value=""; qtyInput.value=""; result.value=""; preview.innerHTML=""; error.textContent="";}
 function goMR(){window.location.href="mr.html";}
 </script>
