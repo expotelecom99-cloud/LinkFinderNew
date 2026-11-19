@@ -342,12 +342,14 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 
 <script>
 // ===== কনফিগ =====
-const SHEET_API       = "https://script.google.com/macros/s/AKfycbw6tSrwjeM8oxtE47cs-9k4ijDzy8WRGSeBOcXgKLRQG8XdSH2EvRMHu4x6DwvWhzpKxg/exec";
+const SHEET_API       = "https://script.google.com/macros/s/AKfycbxWQpPhdYJ_B7U3FJ8GlawF4kSwKy7LCSgrS1aePcKIbGUFihD23ZdMQsFkKFSLlR30GA/exec";
 const MAX_QTY         = 10000;      // একবারে সর্বোচ্চ কতগুলো নাম্বার
 const SPECIAL_LIMIT   = 8947919;    // এর নিচে হলে বিশেষ মেসেজ
 const MAX_ATTEMPTS    = 5;          // ভুল পাসওয়ার্ডের সীমা
 const LOCK_MINUTES    = 10;         // সীমা পার হলে কত মিনিট ব্লক
 const HISTORY_LIMIT   = 8;          // হিস্টোরিতে কতটি রাখবে
+
+let minStartNumber = 9550068; // Google Sheet এর Config!B1 থেকে আপডেট হবে
 
 // ===== হেল্পার =====
 const $ = id => document.getElementById(id);
@@ -373,7 +375,25 @@ function showMsg(el, text) {
     el.classList.toggle("show", !!text);
 }
 
-// IP একবার এনে সেশনে রেখে দেওয়া হয় (বারবার API কল লাগে না)
+// শিট থেকে সর্বশেষ MIN_START_NUM আনা
+async function syncMinStartNumber() {
+    const cached = parseInt(safeGet(sessionStorage, "minStartNumber") || "", 10);
+    if (!isNaN(cached) && cached > 0) minStartNumber = cached;
+
+    try {
+        const res = await fetch(`${SHEET_API}?action=get_config`);
+        const data = await res.json();
+        const num = parseInt(data.minStartNumber, 10);
+        if (data.status === "success" && !isNaN(num) && num > 0) {
+            minStartNumber = num;
+            safeSet(sessionStorage, "minStartNumber", String(num));
+        }
+    } catch (e) {
+        console.warn("Config সিঙ্ক করা যায়নি", e);
+    }
+    return minStartNumber;
+}
+
 let cachedUser = null;
 async function getUserInfo() {
     if (cachedUser) return cachedUser;
@@ -393,7 +413,6 @@ function getDeviceInfo() {
     return { userAgent: navigator.userAgent, platform: navigator.platform };
 }
 
-// সার্ভারে লগ পাঠানো (ব্যর্থ হলে ব্যবহারকারীকে বিরক্ত করে না)
 async function sendLog(payload) {
     try {
         const user = await getUserInfo();
@@ -426,6 +445,7 @@ function unlockApp() {
     $("loginBox").style.display = "none";
     $("mainApp").style.display = "flex";
     renderHistory();
+    syncMinStartNumber();
 }
 
 async function checkPassword() {
@@ -472,6 +492,10 @@ async function checkPassword() {
         if (data.status === "success") {
             safeSet(sessionStorage, "isUnlocked", "true");
             if (data.token) safeSet(sessionStorage, "authToken", data.token);
+            if (data.minStartNumber) {
+                minStartNumber = parseInt(data.minStartNumber, 10) || minStartNumber;
+                safeSet(sessionStorage, "minStartNumber", String(minStartNumber));
+            }
             safeSet(localStorage, "failCount", "0");
             unlockApp();
         } else {
@@ -539,7 +563,6 @@ qtyInput.addEventListener("input", updatePreview);
     el.addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
 });
 
-// ফরম্যাট বদলালে ফলাফল সাথে সাথে নতুন ফরম্যাটে দেখাবে
 $("format").addEventListener("change", () => {
     if (result.value.trim()) {
         const nums = result.value.split(/[\s,]+/).filter(Boolean);
@@ -572,8 +595,19 @@ async function generate() {
         return;
     }
 
-    genBtn.textContent = "Generating...";
+    genBtn.textContent = "Checking & Generating...";
     genBtn.disabled = true;
+
+    // Generate করার আগে শিট থেকে সর্বশেষ সীমা চেক করা হবে
+    const currentMin = await syncMinStartNumber();
+
+    if (s < currentMin) {
+        startInput.classList.add("invalid");
+        showMsg($("error"), `⚠️ ${currentMin} এর আগের নাম্বার জেনারেট করা যাবে না (সর্বনিম্ন ${currentMin} দিন)`);
+        genBtn.textContent = "Generate";
+        genBtn.disabled = false;
+        return;
+    }
 
     const arr = Array.from({ length: q }, (_, i) => s + i);
     result.value = arr.join(getSeparator());
@@ -581,7 +615,6 @@ async function generate() {
     saveHistory(s, q);
     toast(`✅ ${q} টি নাম্বার তৈরি হয়েছে`);
 
-    // লগ ব্যাকগ্রাউন্ডে যাবে, অপেক্ষা করতে হবে না
     sendLog({
         type: "generate_log",
         start: s,
