@@ -172,7 +172,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 .btn-link {
     display: block;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     padding: 11px 14px;
     font-size: 14px;
     color: #92400e;
@@ -181,6 +181,14 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
     text-align: center;
 }
 .btn-link:hover { background: #fde68a; }
+
+.btn-link-finder {
+    margin-bottom: 20px;
+    color: #0f766e;
+    background: #ccfbf1;
+    border-color: #2dd4bf;
+}
+.btn-link-finder:hover { background: #99f6e4; }
 
 .pw-toggle {
     position: absolute;
@@ -291,6 +299,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 <div id="mainApp">
     <div class="container">
         <button class="btn-link" id="mrBtn">🔎 MR নাম্বার দিয়ে সম্ভাব্য লিংক নাম্বার খোঁজার চেষ্টা করুন</button>
+        <button class="btn-link btn-link-finder" id="finderBtn">🧾 C&amp;F Receipt Finder ওপেন করুন</button>
 
         <div class="icon">🔢</div>
         <h2>Number Generator</h2>
@@ -676,6 +685,7 @@ $("copyBtn").addEventListener("click", copyText);
 $("downloadBtn").addEventListener("click", downloadText);
 $("clearBtn").addEventListener("click", clearAll);
 $("mrBtn").addEventListener("click", () => { window.location.href = "mr.html"; });
+$("finderBtn").addEventListener("click", () => { window.location.href = "https://akibhassan0011-eng.github.io/cnf-receipt-finder/"; });
 
 // ===== হিস্টোরি =====
 function loadHistory() {
